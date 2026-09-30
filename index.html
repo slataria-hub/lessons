@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Уроки</title>
+<style>
+:root{--bg:#eef1f6;--card:#fff;--ink:#1b2333;--mut:#6b7689;--line:#dfe5ee;--ok:#16915f;--no:#d04844;--acc:#3b5bdb;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#10141d;--card:#1a2030;--ink:#eaeef7;--mut:#8f9ab0;--line:#283044;--ok:#3ecf95;--no:#ff7b76;--acc:#8ea2ff}}
+:root[data-theme="dark"]{--bg:#10141d;--card:#1a2030;--ink:#eaeef7;--mut:#8f9ab0;--line:#283044;--ok:#3ecf95;--no:#ff7b76;--acc:#8ea2ff}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.4 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+main{max-width:520px;margin:0 auto;padding:16px 16px 110px}
+button,input,select,textarea{font:inherit;color:inherit}
+button{border:0;cursor:pointer}
+.hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.dt{text-align:center;display:flex;flex-direction:column}
+.dt b{font-size:22px;text-transform:capitalize}.dt span{color:var(--mut)}
+.ic{width:48px;height:48px;border-radius:16px;background:var(--card);font-size:26px;border:1px solid var(--line)}
+.chip{display:block;margin:0 auto 14px;padding:8px 16px;border-radius:99px;background:var(--acc);color:#fff;font-weight:600}
+.card{background:var(--card);border-radius:20px;padding:16px 16px 14px 20px;margin-bottom:12px;position:relative;overflow:hidden;border:1px solid var(--line)}
+.card:before{content:"";position:absolute;left:0;top:0;bottom:0;width:6px;background:var(--c)}
+.row{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.nm{font-size:19px;font-weight:600}.tm{font-size:15px;color:var(--mut);font-variant-numeric:tabular-nums}
+.pr{font-weight:600;white-space:nowrap}
+.btns{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+.b{height:52px;border-radius:14px;background:transparent;border:2px solid var(--line);font-weight:600;font-size:17px}
+.b.ok.on{background:var(--ok);border-color:var(--ok);color:#fff}
+.b.no.on{background:var(--no);border-color:var(--no);color:#fff}
+.add,.wide{width:100%;height:52px;border-radius:16px;background:transparent;border:2px dashed var(--line);color:var(--mut);font-weight:600;margin-top:4px}
+.empty{text-align:center;color:var(--mut);padding:30px 10px}
+.hero{background:var(--ink);color:var(--bg);border-radius:24px;padding:22px;margin-bottom:14px}
+.hero small{opacity:.7}.hero .big{font-size:42px;font-weight:700;line-height:1.1;margin-top:4px;font-variant-numeric:tabular-nums}
+.st{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px;text-align:center}
+.st div{background:var(--bg);border-radius:12px;padding:8px 4px}.st b{display:block;font-size:20px}.st span{font-size:13px;color:var(--mut)}
+.tabs{position:fixed;left:0;right:0;bottom:0;padding:8px 12px calc(10px + env(safe-area-inset-bottom,0px));background:var(--card);border-top:1px solid var(--line);display:flex;gap:6px;justify-content:center}
+.tab{flex:1;max-width:170px;height:48px;border-radius:14px;background:transparent;color:var(--mut);font-weight:600}
+.tab.on{background:var(--bg);color:var(--ink)}
+.ov{position:fixed;inset:0;background:rgba(10,14,22,.5);display:none;align-items:flex-end;justify-content:center;z-index:5}
+.ov.show{display:flex}
+.sheet{background:var(--card);width:100%;max-width:520px;max-height:90%;overflow:auto;border-radius:24px 24px 0 0;padding:20px 18px calc(20px + env(safe-area-inset-bottom,0px))}
+.sheet h2{margin:0 0 14px;font-size:20px}
+label{display:block;font-size:14px;color:var(--mut);margin:12px 0 6px}
+input,select,textarea{width:100%;height:48px;border-radius:12px;border:1px solid var(--line);background:var(--bg);padding:0 12px}
+textarea{height:140px;padding:10px;font-size:13px}
+.dots{display:flex;gap:8px;flex-wrap:wrap}.dots i{width:34px;height:34px;border-radius:50%;background:var(--c);cursor:pointer;border:3px solid var(--card);box-shadow:0 0 0 2px transparent}
+.dots i.on{box-shadow:0 0 0 2px var(--ink)}
+.days{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}
+.days button{height:44px;border-radius:12px;background:var(--bg);font-weight:600}.days button.on{background:var(--acc);color:#fff}
+.slot{display:flex;align-items:center;gap:10px;margin-top:8px}.slot span{width:32px;font-weight:600}
+.act{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:20px}
+.pri,.sec{height:52px;border-radius:14px;font-weight:600}
+.pri{background:var(--acc);color:#fff}.sec{background:var(--bg)}.sec.danger{color:var(--no)}
+.sub{cursor:pointer}.sub .tm{margin-top:2px}
+:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
+</style></head><body>
+<main id="app"></main>
+<nav class="tabs" id="tabs"></nav>
+<div class="ov" id="ov"><div class="sheet" id="sh"></div></div>
+<script>
+const KEY='lessons-v1';
+let S={subjects:[],rec:{},extra:[],cur:'€'};
+try{const r=localStorage.getItem(KEY);if(r)S=Object.assign(S,JSON.parse(r))}catch(e){}
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
+const pad=n=>String(n).padStart(2,'0'),ds=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+const pd=s=>{const[a,b,c]=s.split('-').map(Number);return new Date(a,b-1,c)},wd=d=>(d.getDay()+6)%7;
+const DAYS=['Пн','Вт','Ср','Чт','Пт','Сб','Вс'],COLORS=['#3b5bdb','#e8590c','#0ca678','#ae3ec9','#d6336c','#1098ad','#f08c00','#5c7cfa'];
+const money=n=>(Math.round(n*100)/100).toLocaleString('ru-RU')+' '+S.cur,uid=()=>Math.random().toString(36).slice(2,8);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const sub=id=>S.subjects.find(x=>x.id===id);
+let view='today',day=ds(new Date()),month=new Date(new Date().getFullYear(),new Date().getMonth(),1),f=null,ex=null;
+
+function lessonsOn(date){
+  const w=wd(pd(date)),out=[];
+  S.subjects.forEach(s=>s.slots.forEach(sl=>{if(sl.d===w)out.push({sub:s,date,time:sl.t,extra:false})}));
+  S.extra.forEach(e=>{const s=sub(e.sid);if(e.date===date&&s)out.push({sub:s,date,time:e.t,extra:true})});
+  return out.sort((a,b)=>a.time.localeCompare(b.time));
+}
+const rk=l=>l.date+'|'+l.sub.id+'|'+l.time;
+
+function todayView(){
+  const d=pd(day),ls=lessonsOn(day);
+  let h=`<div class="hd"><button class="ic" data-a="prev" aria-label="Предыдущий день">‹</button><div class="dt"><b>${d.toLocaleDateString('ru-RU',{weekday:'long'})}</b><span>${d.toLocaleDateString('ru-RU',{day:'numeric',month:'long'})}</span></div><button class="ic" data-a="next" aria-label="Следующий день">›</button></div>`;
+  if(day!==ds(new Date()))h+=`<button class="chip" data-a="now">Вернуться к сегодняшнему дню</button>`;
+  if(!S.subjects.length)return h+`<p class="empty">Пока нет предметов. Добавьте первый на вкладке «Предметы» — уроки появятся здесь по расписанию.</p>`;
+  if(!ls.length)h+=`<p class="empty">В этот день уроков нет.</p>`;
+  ls.forEach(l=>{const r=S.rec[rk(l)],st=r&&r.st,k=esc(rk(l));
+    h+=`<div class="card" style="--c:${l.sub.color}"><div class="row"><div><div class="nm">${esc(l.sub.name)}</div><div class="tm">${l.time}${l.extra?', разовый':''}</div></div><div class="pr">${money(l.sub.price)}</div></div>
+    <div class="btns"><button class="b ok ${st==='done'?'on':''}" data-k="${k}" data-s="${l.sub.id}" data-st="done">Был</button><button class="b no ${st==='cancel'?'on':''}" data-k="${k}" data-s="${l.sub.id}" data-st="cancel">Отменён</button></div></div>`});
+  return h+`<button class="add" data-a="extra">+ Разовый урок</button>`;
+}
+function totalsView(){
+  const y=month.getFullYear(),m=month.getMonth(),n=new Date(y,m+1,0).getDate(),agg={};
+  S.subjects.forEach(s=>agg[s.id]={s,done:0,cancel:0,plan:0,sum:0});
+  for(let i=1;i<=n;i++)lessonsOn(y+'-'+pad(m+1)+'-'+pad(i)).forEach(l=>{const a=agg[l.sub.id],r=S.rec[rk(l)];if(!r)a.plan++;else if(r.st==='done'){a.done++;a.sum+=r.price}else a.cancel++});
+  const all=Object.values(agg),tot=all.reduce((t,a)=>t+a.sum,0),ml=month.toLocaleDateString('ru-RU',{month:'long',year:'numeric'});
+  let h=`<div class="hd"><button class="ic" data-a="pm" aria-label="Предыдущий месяц">‹</button><div class="dt"><b>${ml}</b></div><button class="ic" data-a="nm" aria-label="Следующий месяц">›</button></div>
+  <div class="hero"><small>К оплате за месяц</small><div class="big">${money(tot)}</div></div>`;
+  if(!all.length)return h+`<p class="empty">Добавьте предметы — здесь появятся итоги.</p>`;
+  all.forEach(a=>h+=`<div class="card" style="--c:${a.s.color}"><div class="row"><div class="nm">${esc(a.s.name)}</div><div class="pr">${money(a.sum)}</div></div>
+  <div class="st"><div><b>${a.done}</b><span>был</span></div><div><b>${a.cancel}</b><span>отменён</span></div><div><b>${a.plan}</b><span>без отметки</span></div></div></div>`);
+  return h;
+}
+function subjectsView(){
+  let h=`<div class="hd"><div class="dt" style="text-align:left"><b>Предметы</b></div></div>`;
+  S.subjects.forEach(s=>h+=`<div class="card sub" style="--c:${s.color}" data-a="edit" data-id="${s.id}"><div class="row"><div><div class="nm">${esc(s.name)}</div><div class="tm">${s.slots.length?s.slots.map(x=>DAYS[x.d]+' '+x.t).join(', '):'без расписания'}</div></div><div class="pr">${money(s.price)}</div></div></div>`);
+  h+=`<button class="add" data-a="new">+ Добавить предмет</button>
+  <label for="cur">Валюта</label><input id="cur" value="${esc(S.cur)}" maxlength="4" data-a-in="cur">
+  <button class="wide" style="margin-top:22px" data-a="backup">Резервная копия данных</button>`;
+  return h;
+}
+function render(){
+  $('#app').innerHTML={today:todayView,totals:totalsView,subjects:subjectsView}[view]();
+  $('#tabs').innerHTML=[['today','Сегодня'],['totals','Итоги'],['subjects','Предметы']].map(([v,t])=>`<button class="tab ${view===v?'on':''}" data-tab="${v}">${t}</button>`).join('');
+}
+const $=q=>document.querySelector(q);
+function open(h){$('#sh').innerHTML=h;$('#ov').classList.add('show')}
+function close(){$('#ov').classList.remove('show');f=ex=null}
+
+function editSheet(){
+  const days=DAYS.map((d,i)=>`<button data-a="tg" data-d="${i}" class="${f.slots.some(s=>s.d===i)?'on':''}">${d}</button>`).join('');
+  const slots=[...f.slots].sort((a,b)=>a.d-b.d).map(s=>`<div class="slot"><span>${DAYS[s.d]}</span><input type="time" value="${s.t}" data-f="t" data-d="${s.d}"></div>`).join('');
+  open(`<h2>${f.id?'Предмет':'Новый предмет'}</h2><label>Название</label><input data-f="name" value="${esc(f.name)}" placeholder="Например, Английский">
+  <label>Цена одного урока, ${esc(S.cur)}</label><input data-f="price" inputmode="decimal" value="${f.price}">
+  <label>Цвет</label><div class="dots">${COLORS.map(c=>`<i style="--c:${c}" class="${f.color===c?'on':''}" data-a="col" data-c="${c}"></i>`).join('')}</div>
+  <label>Дни занятий</label><div class="days">${days}</div>${slots}
+  <div class="act"><button class="sec ${f.del?'danger':''}" data-a="del" style="${f.id?'':'display:none'}">${f.del?'Точно удалить?':'Удалить'}</button><button class="pri" data-a="savesub" style="${f.id?'':'grid-column:1/3'}">Сохранить</button></div>
+  <button class="sec wide" style="border:0;margin-top:10px" data-a="close">Закрыть</button>`);
+}
+function extraSheet(){
+  open(`<h2>Разовый урок</h2><label>Предмет</label><select data-x="sid">${S.subjects.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join('')}</select>
+  <label>Время</label><input type="time" value="16:00" data-x="t"><div class="act"><button class="sec" data-a="close">Закрыть</button><button class="pri" data-a="saveex">Добавить</button></div>`);
+  ex={sid:S.subjects[0].id,t:'16:00'};
+}
+function backupSheet(){
+  open(`<h2>Резервная копия</h2><p style="color:var(--mut);margin:0 0 10px">Скопируйте текст и сохраните в заметках или отправьте себе. Чтобы восстановить, вставьте текст сюда и нажмите «Восстановить».</p>
+  <textarea id="bk">${esc(JSON.stringify(S))}</textarea><p id="msg" style="min-height:22px;color:var(--mut)"></p>
+  <div class="act"><button class="sec" data-a="copy">Скопировать</button><button class="pri" data-a="restore">Восстановить</button></div><button class="sec wide" style="border:0;margin-top:10px" data-a="close">Закрыть</button>`);
+}
+
+document.addEventListener('click',e=>{
+  const t=e.target.closest('button,[data-a],.tab');if(!t)return;
+  const a=t.dataset.a;
+  if(t.dataset.tab){view=t.dataset.tab;render();return}
+  if(t.dataset.k){const k=t.dataset.k,st=t.dataset.st,r=S.rec[k];if(r&&r.st===st)delete S.rec[k];else S.rec[k]={st,price:sub(t.dataset.s).price};save();render();return}
+  const shift=n=>{const d=pd(day);d.setDate(d.getDate()+n);day=ds(d);render()};
+  if(a==='prev')shift(-1);else if(a==='next')shift(1);else if(a==='now'){day=ds(new Date());render()}
+  else if(a==='pm'||a==='nm'){month=new Date(month.getFullYear(),month.getMonth()+(a==='nm'?1:-1),1);render()}
+  else if(a==='new'){f={id:'',name:'',price:'',color:COLORS[S.subjects.length%COLORS.length],slots:[]};editSheet()}
+  else if(a==='edit'){const s=sub(t.dataset.id);f={...s,slots:s.slots.map(x=>({...x}))};editSheet()}
+  else if(a==='tg'){const d=+t.dataset.d,i=f.slots.findIndex(s=>s.d===d);i<0?f.slots.push({d,t:'16:00'}):f.slots.splice(i,1);editSheet()}
+  else if(a==='col'){f.color=t.dataset.c;editSheet()}
+  else if(a==='savesub'){
+    const p=parseFloat(String(f.price).replace(',','.'));
+    if(!f.name.trim()||isNaN(p)||p<0){const n=$('[data-f=name]');n.style.borderColor='var(--no)';if(f.name.trim())$('[data-f=price]').style.borderColor='var(--no)';return}
+    const o={id:f.id||uid(),name:f.name.trim(),price:p,color:f.color,slots:f.slots.sort((x,y)=>x.d-y.d)};
+    const i=S.subjects.findIndex(s=>s.id===o.id);i<0?S.subjects.push(o):S.subjects[i]=o;save();close();render()}
+  else if(a==='del'){if(!f.del){f.del=true;editSheet();return}
+    S.subjects=S.subjects.filter(s=>s.id!==f.id);S.extra=S.extra.filter(x=>x.sid!==f.id);
+    Object.keys(S.rec).forEach(k=>{if(k.split('|')[1]===f.id)delete S.rec[k]});save();close();render()}
+  else if(a==='extra'){S.subjects.length?extraSheet():(view='subjects',render())}
+  else if(a==='saveex'){S.extra.push({date:day,sid:ex.sid,t:ex.t});save();close();render()}
+  else if(a==='backup')backupSheet();
+  else if(a==='copy'){const b=$('#bk');b.select();let ok=false;try{ok=document.execCommand('copy')}catch(_){}
+    $('#msg').textContent=ok?'Скопировано.':'Текст выделен — скопируйте его вручную.'}
+  else if(a==='restore'){try{const d=JSON.parse($('#bk').value);if(!Array.isArray(d.subjects)||typeof d.rec!=='object')throw 0;S=Object.assign({subjects:[],rec:{},extra:[],cur:'€'},d);save();close();render()}catch(_){$('#msg').textContent='Не удалось прочитать текст. Проверьте, что он вставлен целиком.'}}
+  else if(a==='close')close();
+});
+$('#ov').addEventListener('click',e=>{if(e.target.id==='ov')close()});
+document.addEventListener('input',e=>{
+  const t=e.target;
+  if(t.dataset.f==='name')f.name=t.value;else if(t.dataset.f==='price')f.price=t.value;
+  else if(t.dataset.f==='t'){const s=f.slots.find(x=>x.d===+t.dataset.d);if(s&&t.value)s.t=t.value}
+  else if(t.dataset.x)ex[t.dataset.x]=t.value||ex[t.dataset.x];
+  else if(t.dataset.aIn==='cur'){S.cur=t.value.trim()||'€';save()}
+});
+render();
+</script></body></html>

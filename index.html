@@ -63,17 +63,14 @@ textarea{height:140px;padding:10px;font-size:13px}
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js';
 import { getFirestore, doc, setDoc, onSnapshot, initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from 'https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js';
 
-// ========== ВСТАВЬТЕ СВОЙ firebaseConfig ==========
-// Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: "AIzaSyA6B8kSZgkU5YI5kr74ZUYq-bdPUn8OxMA",
+  apiKey: "AIzaSyA6B8kSZgkU5YI5kr74ZUYq-bdPUn80xMA",
   authDomain: "lessons-sync.firebaseapp.com",
   projectId: "lessons-sync",
   storageBucket: "lessons-sync.firebasestorage.app",
   messagingSenderId: "433089456554",
   appId: "1:433089456554:web:23ccf7f249d40af04723d3"
 };
-
 
 const app = initializeApp(firebaseConfig);
 const db = initializeFirestore(app, {
@@ -289,7 +286,6 @@ onSnapshot(docRef, { includeMetadataChanges: true }, snap => {
   if (snap.exists()) {
     const data = snap.data();
     const remoteMeta = data._meta || {};
-    // Не перезаписываем, если это наши же неотправленные изменения
     if (remoteMeta.deviceId === deviceId && remoteMeta.updatedAt === meta.updatedAt) {
       syncStatus = snap.metadata.fromCache ? 'Офлайн (локальная копия)' : 'Синхронизировано';
       render();
@@ -303,7 +299,6 @@ onSnapshot(docRef, { includeMetadataChanges: true }, snap => {
     if (meta.updatedBy) syncStatus += ` · ${meta.updatedBy}`;
     render();
   } else {
-    // Документа нет — загружаем локальные данные в облако
     if (S.subjects.length || Object.keys(S.rec).length) {
       save();
       syncStatus = 'Первая синхронизация…';

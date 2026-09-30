@@ -1,5 +1,6 @@
 <!doctype html>
-<html lang="ru"><head><meta charset="utf-8">
+<html lang="ru"><head>
+<meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Уроки</title>
 <style>
@@ -51,126 +52,272 @@ textarea{height:140px;padding:10px;font-size:13px}
 .pri{background:var(--acc);color:#fff}.sec{background:var(--bg)}.sec.danger{color:var(--no)}
 .sub{cursor:pointer}.sub .tm{margin-top:2px}
 :focus-visible{outline:3px solid var(--acc);outline-offset:2px}
-</style></head><body>
+.sync-status{font-size:13px;color:var(--mut);text-align:center;margin:8px 0 0}
+</style>
+</head><body>
 <main id="app"></main>
 <nav class="tabs" id="tabs"></nav>
 <div class="ov" id="ov"><div class="sheet" id="sh"></div></div>
-<script>
-const KEY='lessons-v1';
-let S={subjects:[],rec:{},extra:[],cur:'€'};
-try{const r=localStorage.getItem(KEY);if(r)S=Object.assign(S,JSON.parse(r))}catch(e){}
-const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
-const pad=n=>String(n).padStart(2,'0'),ds=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
-const pd=s=>{const[a,b,c]=s.split('-').map(Number);return new Date(a,b-1,c)},wd=d=>(d.getDay()+6)%7;
-const DAYS=['Пн','Вт','Ср','Чт','Пт','Сб','Вс'],COLORS=['#3b5bdb','#e8590c','#0ca678','#ae3ec9','#d6336c','#1098ad','#f08c00','#5c7cfa'];
-const money=n=>(Math.round(n*100)/100).toLocaleString('ru-RU')+' '+S.cur,uid=()=>Math.random().toString(36).slice(2,8);
-const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-const sub=id=>S.subjects.find(x=>x.id===id);
-let view='today',day=ds(new Date()),month=new Date(new Date().getFullYear(),new Date().getMonth(),1),f=null,ex=null;
 
-function lessonsOn(date){
-  const w=wd(pd(date)),out=[];
-  S.subjects.forEach(s=>s.slots.forEach(sl=>{if(sl.d===w)out.push({sub:s,date,time:sl.t,extra:false})}));
-  S.extra.forEach(e=>{const s=sub(e.sid);if(e.date===date&&s)out.push({sub:s,date,time:e.t,extra:true})});
-  return out.sort((a,b)=>a.time.localeCompare(b.time));
-}
-const rk=l=>l.date+'|'+l.sub.id+'|'+l.time;
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js';
+import { getFirestore, doc, setDoc, onSnapshot, initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from 'https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js';
 
-function todayView(){
-  const d=pd(day),ls=lessonsOn(day);
-  let h=`<div class="hd"><button class="ic" data-a="prev" aria-label="Предыдущий день">‹</button><div class="dt"><b>${d.toLocaleDateString('ru-RU',{weekday:'long'})}</b><span>${d.toLocaleDateString('ru-RU',{day:'numeric',month:'long'})}</span></div><button class="ic" data-a="next" aria-label="Следующий день">›</button></div>`;
-  if(day!==ds(new Date()))h+=`<button class="chip" data-a="now">Вернуться к сегодняшнему дню</button>`;
-  if(!S.subjects.length)return h+`<p class="empty">Пока нет предметов. Добавьте первый на вкладке «Предметы» — уроки появятся здесь по расписанию.</p>`;
-  if(!ls.length)h+=`<p class="empty">В этот день уроков нет.</p>`;
-  ls.forEach(l=>{const r=S.rec[rk(l)],st=r&&r.st,k=esc(rk(l));
-    h+=`<div class="card" style="--c:${l.sub.color}"><div class="row"><div><div class="nm">${esc(l.sub.name)}</div><div class="tm">${l.time}${l.extra?', разовый':''}</div></div><div class="pr">${money(l.sub.price)}</div></div>
-    <div class="btns"><button class="b ok ${st==='done'?'on':''}" data-k="${k}" data-s="${l.sub.id}" data-st="done">Был</button><button class="b no ${st==='cancel'?'on':''}" data-k="${k}" data-s="${l.sub.id}" data-st="cancel">Отменён</button></div></div>`});
-  return h+`<button class="add" data-a="extra">+ Разовый урок</button>`;
+// ========== ВСТАВЬТЕ СВОЙ firebaseConfig ==========
+// Your web app's Firebase configuration
+const firebaseConfig = {
+  apiKey: "AIzaSyA6B8kSZgkU5YI5kr74ZUYq-bdPUn8OxMA",
+  authDomain: "lessons-sync.firebaseapp.com",
+  projectId: "lessons-sync",
+  storageBucket: "lessons-sync.firebasestorage.app",
+  messagingSenderId: "433089456554",
+  appId: "1:433089456554:web:23ccf7f249d40af04723d3"
+};
+
+
+const app = initializeApp(firebaseConfig);
+const db = initializeFirestore(app, {
+  localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
+});
+const docRef = doc(db, 'lessons', 'shared');
+
+const KEY = 'lessons-v1';
+const DEVICE_KEY = 'lessons-device-id';
+const NAME_KEY = 'lessons-my-name';
+
+let S = { subjects: [], rec: {}, extra: [], cur: '€' };
+let meta = { updatedAt: null, updatedBy: '', deviceId: '' };
+let deviceId = localStorage.getItem(DEVICE_KEY) || (() => {
+  const id = Math.random().toString(36).slice(2, 10);
+  localStorage.setItem(DEVICE_KEY, id);
+  return id;
+})();
+let myName = localStorage.getItem(NAME_KEY) || '';
+
+try {
+  const r = localStorage.getItem(KEY);
+  if (r) S = Object.assign(S, JSON.parse(r));
+} catch (e) {}
+
+const saveLocal = () => {
+  try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {}
+};
+
+const save = async () => {
+  saveLocal();
+  meta = {
+    updatedAt: new Date().toISOString(),
+    updatedBy: myName || 'Устройство ' + deviceId.slice(0, 4),
+    deviceId
+  };
+  try {
+    await setDoc(docRef, { ...S, _meta: meta }, { merge: false });
+  } catch (e) {
+    console.warn('Синхронизация отложена (офлайн или ошибка)', e);
+  }
+};
+
+const pad = n => String(n).padStart(2, '0');
+const ds = d => d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+const pd = s => { const [a, b, c] = s.split('-').map(Number); return new Date(a, b - 1, c); };
+const wd = d => (d.getDay() + 6) % 7;
+const DAYS = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+const COLORS = ['#3b5bdb', '#e8590c', '#0ca678', '#ae3ec9', '#d6336c', '#1098ad', '#f08c00', '#5c7cfa'];
+const money = n => (Math.round(n * 100) / 100).toLocaleString('ru-RU') + ' ' + S.cur;
+const uid = () => Math.random().toString(36).slice(2, 8);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const sub = id => S.subjects.find(x => x.id === id);
+
+let view = 'today', day = ds(new Date()), month = new Date(new Date().getFullYear(), new Date().getMonth(), 1), f = null, ex = null;
+let syncStatus = 'Подключение…';
+
+function lessonsOn(date) {
+  const w = wd(pd(date)), out = [];
+  S.subjects.forEach(s => s.slots.forEach(sl => { if (sl.d === w) out.push({ sub: s, date, time: sl.t, extra: false }); }));
+  S.extra.forEach(e => { const s = sub(e.sid); if (e.date === date && s) out.push({ sub: s, date, time: e.t, extra: true }); });
+  return out.sort((a, b) => a.time.localeCompare(b.time));
 }
-function totalsView(){
-  const y=month.getFullYear(),m=month.getMonth(),n=new Date(y,m+1,0).getDate(),agg={};
-  S.subjects.forEach(s=>agg[s.id]={s,done:0,cancel:0,plan:0,sum:0});
-  for(let i=1;i<=n;i++)lessonsOn(y+'-'+pad(m+1)+'-'+pad(i)).forEach(l=>{const a=agg[l.sub.id],r=S.rec[rk(l)];if(!r)a.plan++;else if(r.st==='done'){a.done++;a.sum+=r.price}else a.cancel++});
-  const all=Object.values(agg),tot=all.reduce((t,a)=>t+a.sum,0),ml=month.toLocaleDateString('ru-RU',{month:'long',year:'numeric'});
-  let h=`<div class="hd"><button class="ic" data-a="pm" aria-label="Предыдущий месяц">‹</button><div class="dt"><b>${ml}</b></div><button class="ic" data-a="nm" aria-label="Следующий месяц">›</button></div>
-  <div class="hero"><small>К оплате за месяц</small><div class="big">${money(tot)}</div></div>`;
-  if(!all.length)return h+`<p class="empty">Добавьте предметы — здесь появятся итоги.</p>`;
-  all.forEach(a=>h+=`<div class="card" style="--c:${a.s.color}"><div class="row"><div class="nm">${esc(a.s.name)}</div><div class="pr">${money(a.sum)}</div></div>
+const rk = l => l.date + '|' + l.sub.id + '|' + l.time;
+
+function todayView() {
+  const d = pd(day), ls = lessonsOn(day);
+  let h = `<div class="hd"><button class="ic" data-a="prev" aria-label="Предыдущий день">‹</button><div class="dt"><b>${d.toLocaleDateString('ru-RU', { weekday: 'long' })}</b><span>${d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })}</span></div><button class="ic" data-a="next" aria-label="Следующий день">›</button></div>`;
+  if (day !== ds(new Date())) h += `<button class="chip" data-a="now">Вернуться к сегодняшнему дню</button>`;
+  h += `<div class="sync-status">${syncStatus}</div>`;
+  if (!S.subjects.length) return h + `<p class="empty">Пока нет предметов. Добавьте первый на вкладке «Предметы» — уроки появятся здесь по расписанию.</p>`;
+  if (!ls.length) h += `<p class="empty">В этот день уроков нет.</p>`;
+  ls.forEach(l => {
+    const r = S.rec[rk(l)], st = r && r.st, k = esc(rk(l));
+    h += `<div class="card" style="--c:${l.sub.color}"><div class="row"><div><div class="nm">${esc(l.sub.name)}</div><div class="tm">${l.time}${l.extra ? ', разовый' : ''}</div></div><div class="pr">${money(l.sub.price)}</div></div>
+    <div class="btns"><button class="b ok ${st === 'done' ? 'on' : ''}" data-k="${k}" data-s="${l.sub.id}" data-st="done">Был</button><button class="b no ${st === 'cancel' ? 'on' : ''}" data-k="${k}" data-s="${l.sub.id}" data-st="cancel">Отменён</button></div></div>`;
+  });
+  return h + `<button class="add" data-a="extra">+ Разовый урок</button>`;
+}
+
+function totalsView() {
+  const y = month.getFullYear(), m = month.getMonth(), n = new Date(y, m + 1, 0).getDate(), agg = {};
+  S.subjects.forEach(s => agg[s.id] = { s, done: 0, cancel: 0, plan: 0, sum: 0 });
+  for (let i = 1; i <= n; i++) lessonsOn(y + '-' + pad(m + 1) + '-' + pad(i)).forEach(l => {
+    const a = agg[l.sub.id], r = S.rec[rk(l)];
+    if (!r) a.plan++; else if (r.st === 'done') { a.done++; a.sum += r.price; } else a.cancel++;
+  });
+  const all = Object.values(agg), tot = all.reduce((t, a) => t + a.sum, 0), ml = month.toLocaleDateString('ru-RU', { month: 'long', year: 'numeric' });
+  let h = `<div class="hd"><button class="ic" data-a="pm" aria-label="Предыдущий месяц">‹</button><div class="dt"><b>${ml}</b></div><button class="ic" data-a="nm" aria-label="Следующий месяц">›</button></div>
+  <div class="hero"><small>К оплате за месяц</small><div class="big">${money(tot)}</div></div>
+  <div class="sync-status">${syncStatus}</div>`;
+  if (!all.length) return h + `<p class="empty">Добавьте предметы — здесь появятся итоги.</p>`;
+  all.forEach(a => h += `<div class="card" style="--c:${a.s.color}"><div class="row"><div class="nm">${esc(a.s.name)}</div><div class="pr">${money(a.sum)}</div></div>
   <div class="st"><div><b>${a.done}</b><span>был</span></div><div><b>${a.cancel}</b><span>отменён</span></div><div><b>${a.plan}</b><span>без отметки</span></div></div></div>`);
   return h;
 }
-function subjectsView(){
-  let h=`<div class="hd"><div class="dt" style="text-align:left"><b>Предметы</b></div></div>`;
-  S.subjects.forEach(s=>h+=`<div class="card sub" style="--c:${s.color}" data-a="edit" data-id="${s.id}"><div class="row"><div><div class="nm">${esc(s.name)}</div><div class="tm">${s.slots.length?s.slots.map(x=>DAYS[x.d]+' '+x.t).join(', '):'без расписания'}</div></div><div class="pr">${money(s.price)}</div></div></div>`);
-  h+=`<button class="add" data-a="new">+ Добавить предмет</button>
-  <label for="cur">Валюта</label><input id="cur" value="${esc(S.cur)}" maxlength="4" data-a-in="cur">
+
+function subjectsView() {
+  let h = `<div class="hd"><div class="dt" style="text-align:left"><b>Предметы</b></div></div>
+  <div class="sync-status">${syncStatus}</div>
+  <label for="myname">Моё имя (видно в истории изменений)</label>
+  <input id="myname" value="${esc(myName)}" maxlength="30" data-a-in="name" placeholder="Например, Анна">
+  <label for="cur">Валюта</label><input id="cur" value="${esc(S.cur)}" maxlength="4" data-a-in="cur">`;
+  S.subjects.forEach(s => h += `<div class="card sub" style="--c:${s.color}" data-a="edit" data-id="${s.id}"><div class="row"><div><div class="nm">${esc(s.name)}</div><div class="tm">${s.slots.length ? s.slots.map(x => DAYS[x.d] + ' ' + x.t).join(', ') : 'без расписания'}</div></div><div class="pr">${money(s.price)}</div></div></div>`);
+  h += `<button class="add" data-a="new">+ Добавить предмет</button>
   <button class="wide" style="margin-top:22px" data-a="backup">Резервная копия данных</button>`;
+  if (meta.updatedAt) {
+    const t = new Date(meta.updatedAt).toLocaleString('ru-RU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+    h += `<p style="color:var(--mut);font-size:13px;margin-top:16px;text-align:center">Последнее изменение: ${esc(meta.updatedBy)} · ${t}</p>`;
+  }
   return h;
 }
-function render(){
-  $('#app').innerHTML={today:todayView,totals:totalsView,subjects:subjectsView}[view]();
-  $('#tabs').innerHTML=[['today','Сегодня'],['totals','Итоги'],['subjects','Предметы']].map(([v,t])=>`<button class="tab ${view===v?'on':''}" data-tab="${v}">${t}</button>`).join('');
-}
-const $=q=>document.querySelector(q);
-function open(h){$('#sh').innerHTML=h;$('#ov').classList.add('show')}
-function close(){$('#ov').classList.remove('show');f=ex=null}
 
-function editSheet(){
-  const days=DAYS.map((d,i)=>`<button data-a="tg" data-d="${i}" class="${f.slots.some(s=>s.d===i)?'on':''}">${d}</button>`).join('');
-  const slots=[...f.slots].sort((a,b)=>a.d-b.d).map(s=>`<div class="slot"><span>${DAYS[s.d]}</span><input type="time" value="${s.t}" data-f="t" data-d="${s.d}"></div>`).join('');
-  open(`<h2>${f.id?'Предмет':'Новый предмет'}</h2><label>Название</label><input data-f="name" value="${esc(f.name)}" placeholder="Например, Английский">
+function render() {
+  $('#app').innerHTML = { today: todayView, totals: totalsView, subjects: subjectsView }[view]();
+  $('#tabs').innerHTML = [['today', 'Сегодня'], ['totals', 'Итоги'], ['subjects', 'Предметы']].map(([v, t]) => `<button class="tab ${view === v ? 'on' : ''}" data-tab="${v}">${t}</button>`).join('');
+}
+const $ = q => document.querySelector(q);
+function open(h) { $('#sh').innerHTML = h; $('#ov').classList.add('show'); }
+function close() { $('#ov').classList.remove('show'); f = ex = null; }
+
+function editSheet() {
+  const days = DAYS.map((d, i) => `<button data-a="tg" data-d="${i}" class="${f.slots.some(s => s.d === i) ? 'on' : ''}">${d}</button>`).join('');
+  const slots = [...f.slots].sort((a, b) => a.d - b.d).map(s => `<div class="slot"><span>${DAYS[s.d]}</span><input type="time" value="${s.t}" data-f="t" data-d="${s.d}"></div>`).join('');
+  open(`<h2>${f.id ? 'Предмет' : 'Новый предмет'}</h2><label>Название</label><input data-f="name" value="${esc(f.name)}" placeholder="Например, Английский">
   <label>Цена одного урока, ${esc(S.cur)}</label><input data-f="price" inputmode="decimal" value="${f.price}">
-  <label>Цвет</label><div class="dots">${COLORS.map(c=>`<i style="--c:${c}" class="${f.color===c?'on':''}" data-a="col" data-c="${c}"></i>`).join('')}</div>
+  <label>Цвет</label><div class="dots">${COLORS.map(c => `<i style="--c:${c}" class="${f.color === c ? 'on' : ''}" data-a="col" data-c="${c}"></i>`).join('')}</div>
   <label>Дни занятий</label><div class="days">${days}</div>${slots}
-  <div class="act"><button class="sec ${f.del?'danger':''}" data-a="del" style="${f.id?'':'display:none'}">${f.del?'Точно удалить?':'Удалить'}</button><button class="pri" data-a="savesub" style="${f.id?'':'grid-column:1/3'}">Сохранить</button></div>
+  <div class="act"><button class="sec ${f.del ? 'danger' : ''}" data-a="del" style="${f.id ? '' : 'display:none'}">${f.del ? 'Точно удалить?' : 'Удалить'}</button><button class="pri" data-a="savesub" style="${f.id ? '' : 'grid-column:1/3'}">Сохранить</button></div>
   <button class="sec wide" style="border:0;margin-top:10px" data-a="close">Закрыть</button>`);
 }
-function extraSheet(){
-  open(`<h2>Разовый урок</h2><label>Предмет</label><select data-x="sid">${S.subjects.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join('')}</select>
+function extraSheet() {
+  open(`<h2>Разовый урок</h2><label>Предмет</label><select data-x="sid">${S.subjects.map(s => `<option value="${s.id}">${esc(s.name)}</option>`).join('')}</select>
   <label>Время</label><input type="time" value="16:00" data-x="t"><div class="act"><button class="sec" data-a="close">Закрыть</button><button class="pri" data-a="saveex">Добавить</button></div>`);
-  ex={sid:S.subjects[0].id,t:'16:00'};
+  ex = { sid: S.subjects[0].id, t: '16:00' };
 }
-function backupSheet(){
-  open(`<h2>Резервная копия</h2><p style="color:var(--mut);margin:0 0 10px">Скопируйте текст и сохраните в заметках или отправьте себе. Чтобы восстановить, вставьте текст сюда и нажмите «Восстановить».</p>
-  <textarea id="bk">${esc(JSON.stringify(S))}</textarea><p id="msg" style="min-height:22px;color:var(--mut)"></p>
+function backupSheet() {
+  open(`<h2>Резервная копия</h2><p style="color:var(--mut);margin:0 0 10px">Скопируйте текст и сохраните в заметках. Чтобы восстановить — вставьте и нажмите «Восстановить».</p>
+  <textarea id="bk">${esc(JSON.stringify({ ...S, _meta: meta }))}</textarea><p id="msg" style="min-height:22px;color:var(--mut)"></p>
   <div class="act"><button class="sec" data-a="copy">Скопировать</button><button class="pri" data-a="restore">Восстановить</button></div><button class="sec wide" style="border:0;margin-top:10px" data-a="close">Закрыть</button>`);
 }
 
-document.addEventListener('click',e=>{
-  const t=e.target.closest('button,[data-a],.tab');if(!t)return;
-  const a=t.dataset.a;
-  if(t.dataset.tab){view=t.dataset.tab;render();return}
-  if(t.dataset.k){const k=t.dataset.k,st=t.dataset.st,r=S.rec[k];if(r&&r.st===st)delete S.rec[k];else S.rec[k]={st,price:sub(t.dataset.s).price};save();render();return}
-  const shift=n=>{const d=pd(day);d.setDate(d.getDate()+n);day=ds(d);render()};
-  if(a==='prev')shift(-1);else if(a==='next')shift(1);else if(a==='now'){day=ds(new Date());render()}
-  else if(a==='pm'||a==='nm'){month=new Date(month.getFullYear(),month.getMonth()+(a==='nm'?1:-1),1);render()}
-  else if(a==='new'){f={id:'',name:'',price:'',color:COLORS[S.subjects.length%COLORS.length],slots:[]};editSheet()}
-  else if(a==='edit'){const s=sub(t.dataset.id);f={...s,slots:s.slots.map(x=>({...x}))};editSheet()}
-  else if(a==='tg'){const d=+t.dataset.d,i=f.slots.findIndex(s=>s.d===d);i<0?f.slots.push({d,t:'16:00'}):f.slots.splice(i,1);editSheet()}
-  else if(a==='col'){f.color=t.dataset.c;editSheet()}
-  else if(a==='savesub'){
-    const p=parseFloat(String(f.price).replace(',','.'));
-    if(!f.name.trim()||isNaN(p)||p<0){const n=$('[data-f=name]');n.style.borderColor='var(--no)';if(f.name.trim())$('[data-f=price]').style.borderColor='var(--no)';return}
-    const o={id:f.id||uid(),name:f.name.trim(),price:p,color:f.color,slots:f.slots.sort((x,y)=>x.d-y.d)};
-    const i=S.subjects.findIndex(s=>s.id===o.id);i<0?S.subjects.push(o):S.subjects[i]=o;save();close();render()}
-  else if(a==='del'){if(!f.del){f.del=true;editSheet();return}
-    S.subjects=S.subjects.filter(s=>s.id!==f.id);S.extra=S.extra.filter(x=>x.sid!==f.id);
-    Object.keys(S.rec).forEach(k=>{if(k.split('|')[1]===f.id)delete S.rec[k]});save();close();render()}
-  else if(a==='extra'){S.subjects.length?extraSheet():(view='subjects',render())}
-  else if(a==='saveex'){S.extra.push({date:day,sid:ex.sid,t:ex.t});save();close();render()}
-  else if(a==='backup')backupSheet();
-  else if(a==='copy'){const b=$('#bk');b.select();let ok=false;try{ok=document.execCommand('copy')}catch(_){}
-    $('#msg').textContent=ok?'Скопировано.':'Текст выделен — скопируйте его вручную.'}
-  else if(a==='restore'){try{const d=JSON.parse($('#bk').value);if(!Array.isArray(d.subjects)||typeof d.rec!=='object')throw 0;S=Object.assign({subjects:[],rec:{},extra:[],cur:'€'},d);save();close();render()}catch(_){$('#msg').textContent='Не удалось прочитать текст. Проверьте, что он вставлен целиком.'}}
-  else if(a==='close')close();
+document.addEventListener('click', e => {
+  const t = e.target.closest('button,[data-a],.tab'); if (!t) return;
+  const a = t.dataset.a;
+  if (t.dataset.tab) { view = t.dataset.tab; render(); return; }
+  if (t.dataset.k) {
+    const k = t.dataset.k, st = t.dataset.st, r = S.rec[k];
+    if (r && r.st === st) delete S.rec[k];
+    else S.rec[k] = { st, price: sub(t.dataset.s).price };
+    save(); render(); return;
+  }
+  const shift = n => { const d = pd(day); d.setDate(d.getDate() + n); day = ds(d); render(); };
+  if (a === 'prev') shift(-1); else if (a === 'next') shift(1); else if (a === 'now') { day = ds(new Date()); render(); }
+  else if (a === 'pm' || a === 'nm') { month = new Date(month.getFullYear(), month.getMonth() + (a === 'nm' ? 1 : -1), 1); render(); }
+  else if (a === 'new') { f = { id: '', name: '', price: '', color: COLORS[S.subjects.length % COLORS.length], slots: [] }; editSheet(); }
+  else if (a === 'edit') { const s = sub(t.dataset.id); f = { ...s, slots: s.slots.map(x => ({ ...x })) }; editSheet(); }
+  else if (a === 'tg') { const d = +t.dataset.d, i = f.slots.findIndex(s => s.d === d); i < 0 ? f.slots.push({ d, t: '16:00' }) : f.slots.splice(i, 1); editSheet(); }
+  else if (a === 'col') { f.color = t.dataset.c; editSheet(); }
+  else if (a === 'savesub') {
+    const p = parseFloat(String(f.price).replace(',', '.'));
+    if (!f.name.trim() || isNaN(p) || p < 0) { const n = $('[data-f=name]'); n.style.borderColor = 'var(--no)'; if (f.name.trim()) $('[data-f=price]').style.borderColor = 'var(--no)'; return; }
+    const o = { id: f.id || uid(), name: f.name.trim(), price: p, color: f.color, slots: f.slots.sort((x, y) => x.d - y.d) };
+    const i = S.subjects.findIndex(s => s.id === o.id); i < 0 ? S.subjects.push(o) : S.subjects[i] = o;
+    save(); close(); render();
+  }
+  else if (a === 'del') {
+    if (!f.del) { f.del = true; editSheet(); return; }
+    S.subjects = S.subjects.filter(s => s.id !== f.id);
+    S.extra = S.extra.filter(x => x.sid !== f.id);
+    Object.keys(S.rec).forEach(k => { if (k.split('|')[1] === f.id) delete S.rec[k]; });
+    save(); close(); render();
+  }
+  else if (a === 'extra') { S.subjects.length ? extraSheet() : (view = 'subjects', render()); }
+  else if (a === 'saveex') { S.extra.push({ date: day, sid: ex.sid, t: ex.t }); save(); close(); render(); }
+  else if (a === 'backup') backupSheet();
+  else if (a === 'copy') {
+    const b = $('#bk'); b.select();
+    let ok = false; try { ok = document.execCommand('copy'); } catch (_) {}
+    $('#msg').textContent = ok ? 'Скопировано.' : 'Текст выделен — скопируйте вручную.';
+  }
+  else if (a === 'restore') {
+    try {
+      const d = JSON.parse($('#bk').value);
+      if (!Array.isArray(d.subjects) || typeof d.rec !== 'object') throw 0;
+      S = Object.assign({ subjects: [], rec: {}, extra: [], cur: '€' }, d);
+      if (d._meta) meta = d._meta;
+      save(); close(); render();
+    } catch (_) { $('#msg').textContent = 'Не удалось прочитать текст. Проверьте, что он вставлен целиком.'; }
+  }
+  else if (a === 'close') close();
 });
-$('#ov').addEventListener('click',e=>{if(e.target.id==='ov')close()});
-document.addEventListener('input',e=>{
-  const t=e.target;
-  if(t.dataset.f==='name')f.name=t.value;else if(t.dataset.f==='price')f.price=t.value;
-  else if(t.dataset.f==='t'){const s=f.slots.find(x=>x.d===+t.dataset.d);if(s&&t.value)s.t=t.value}
-  else if(t.dataset.x)ex[t.dataset.x]=t.value||ex[t.dataset.x];
-  else if(t.dataset.aIn==='cur'){S.cur=t.value.trim()||'€';save()}
+
+$('#ov').addEventListener('click', e => { if (e.target.id === 'ov') close(); });
+
+document.addEventListener('input', e => {
+  const t = e.target;
+  if (t.dataset.f === 'name') f.name = t.value;
+  else if (t.dataset.f === 'price') f.price = t.value;
+  else if (t.dataset.f === 't') { const s = f.slots.find(x => x.d === +t.dataset.d); if (s && t.value) s.t = t.value; }
+  else if (t.dataset.x) ex[t.dataset.x] = t.value || ex[t.dataset.x];
+  else if (t.dataset.aIn === 'cur') { S.cur = t.value.trim() || '€'; save(); }
+  else if (t.dataset.aIn === 'name') { myName = t.value.trim(); localStorage.setItem(NAME_KEY, myName); }
 });
+
+// ========== Синхронизация ==========
+onSnapshot(docRef, { includeMetadataChanges: true }, snap => {
+  if (snap.metadata.hasPendingWrites) {
+    syncStatus = 'Сохраняю…';
+    render();
+    return;
+  }
+  if (snap.exists()) {
+    const data = snap.data();
+    const remoteMeta = data._meta || {};
+    // Не перезаписываем, если это наши же неотправленные изменения
+    if (remoteMeta.deviceId === deviceId && remoteMeta.updatedAt === meta.updatedAt) {
+      syncStatus = snap.metadata.fromCache ? 'Офлайн (локальная копия)' : 'Синхронизировано';
+      render();
+      return;
+    }
+    const { _meta, ...rest } = data;
+    S = Object.assign({ subjects: [], rec: {}, extra: [], cur: '€' }, rest);
+    meta = remoteMeta;
+    saveLocal();
+    syncStatus = snap.metadata.fromCache ? 'Офлайн (локальная копия)' : 'Синхронизировано';
+    if (meta.updatedBy) syncStatus += ` · ${meta.updatedBy}`;
+    render();
+  } else {
+    // Документа нет — загружаем локальные данные в облако
+    if (S.subjects.length || Object.keys(S.rec).length) {
+      save();
+      syncStatus = 'Первая синхронизация…';
+    } else {
+      syncStatus = 'Готово к работе';
+    }
+    render();
+  }
+}, err => {
+  console.error(err);
+  syncStatus = 'Ошибка связи — работаем локально';
+  render();
+});
+
 render();
-</script></body></html>
+</script>
+</body></html>
